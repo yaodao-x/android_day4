@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
@@ -55,6 +56,8 @@ public class Clock extends View {
 
     private boolean mShowAnalog = true;
 
+    Handler handler;
+
     public Clock(Context context) {
         super(context);
         init(context, null);
@@ -103,6 +106,14 @@ public class Clock extends View {
         this.hoursValuesColor = DEFAULT_PRIMARY_COLOR;
 
         numbersColor = Color.WHITE;
+//        handler = new Handler();
+//        handler.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                handler.postDelayed(this,1000);
+//                invalidate();
+//            }
+//        },1000); //haohao's method
     }
 
     @Override
@@ -121,8 +132,10 @@ public class Clock extends View {
             drawHoursValues(canvas);
             drawNeedles(canvas);
             drawCenter(canvas);
+            postInvalidateDelayed(1000);
         } else {
             drawNumbers(canvas);
+            postInvalidateDelayed(1000);
         }
 
     }
@@ -140,7 +153,7 @@ public class Clock extends View {
 
         for (int i = 0; i < FULL_ANGLE; i += 6 /* Step */) {
 
-            if ((i % RIGHT_ANGLE) != 0 && (i % 15) != 0)
+            if ((i % 30) != 0)
                 paint.setAlpha(CUSTOM_ALPHA);
             else {
                 paint.setAlpha(FULL_ALPHA);
@@ -197,7 +210,23 @@ public class Clock extends View {
     private void drawHoursValues(Canvas canvas) {
         // Default Color:
         // - hoursValuesColor
+        TextPaint textPaint = new TextPaint();
+        textPaint.setTextSize(mWidth * 0.1f);
+        textPaint.setColor(hoursValuesColor);
+        textPaint.setAntiAlias(true);
+        textPaint.setTextAlign(Paint.Align.CENTER);
 
+        Paint.FontMetrics fontMetrics = textPaint.getFontMetrics();
+        float diff = (fontMetrics.top + fontMetrics.bottom) / 2;
+        int textRadius = (int) (mRadius * 0.8f);
+
+        for (int i = 1; i <= 12; i++ /* Step */) {
+            int radians = i * 30 - 90;
+            int textCenterX = (int) (mCenterX + textRadius * Math.cos(Math.toRadians(radians)));
+            int textCenterY = (int) (mCenterY + textRadius * Math.sin(Math.toRadians(radians)));
+            textCenterY = textCenterY - (int) diff;
+            canvas.drawText(String.valueOf(i), textCenterX, textCenterY, textPaint);
+        }
 
     }
 
@@ -212,6 +241,34 @@ public class Clock extends View {
         // - secondsNeedleColor
         // - hoursNeedleColor
         // - minutesNeedleColor
+        Paint secondsNeedle = new Paint();
+        Paint minutesNeedle = new Paint();
+        Paint hoursNeedle = new Paint();
+
+        secondsNeedle.setColor(secondsNeedleColor);
+        secondsNeedle.setStyle(Paint.Style.FILL);
+        secondsNeedle.setStrokeWidth(8f);
+
+        minutesNeedle.setColor(minutesNeedleColor);
+        minutesNeedle.setStyle(Paint.Style.FILL);
+        minutesNeedle.setStrokeWidth(10f);
+
+        hoursNeedle.setColor(hoursNeedleColor);
+        hoursNeedle.setStyle(Paint.Style.FILL);
+        hoursNeedle.setStrokeWidth(12f);
+
+        Calendar calendar = Calendar.getInstance();
+
+        int hour = calendar.get(Calendar.HOUR);
+        int minute = calendar.get(Calendar.MINUTE);
+        int second = calendar.get(Calendar.SECOND);
+
+        canvas.drawLine(mCenterX, mCenterY, (float) (mCenterX + 0.8 * mRadius * Math.cos(Math.toRadians(second * 6 - 90))),
+                (float) (mCenterY + 0.8 * mRadius * Math.sin(Math.toRadians(second * 6 - 90))), secondsNeedle);
+        canvas.drawLine(mCenterX, mCenterY, (float) (mCenterX + 0.6 * mRadius * Math.cos(Math.toRadians(minute * 6 + second / 60f * 6 - 90))),
+                (float) (mCenterY + 0.6 * mRadius * Math.sin(Math.toRadians(minute * 6 + second / 60f * 6 - 90))), minutesNeedle);
+        canvas.drawLine(mCenterX, mCenterY, (float) (mCenterX + 0.4 * mRadius * Math.cos(Math.toRadians(hour * 30 + minute / 60f * 30 - 90))),
+                (float) (mCenterY + 0.4 * mRadius * Math.sin(Math.toRadians(hour * 30 + minute / 60f * 30 - 90))), hoursNeedle);
 
     }
 
@@ -224,6 +281,17 @@ public class Clock extends View {
         // Default Color:
         // - centerInnerColor
         // - centerOuterColor
+        Paint pointPaintInner = new Paint();
+        Paint pointPaintOuter = new Paint();
+        pointPaintInner.setColor(centerInnerColor);
+        pointPaintOuter.setColor(centerOuterColor);
+
+        pointPaintInner.setStyle(Paint.Style.FILL);
+        pointPaintOuter.setStyle(Paint.Style.STROKE);
+        pointPaintOuter.setStrokeWidth(5);
+        canvas.drawCircle(mCenterX, mCenterY, 15, pointPaintInner);
+        canvas.drawCircle(mCenterX, mCenterY, 15, pointPaintOuter);
+
 
     }
 
